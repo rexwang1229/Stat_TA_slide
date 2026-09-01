@@ -1,0 +1,436 @@
+% Latex template: mahmoud.s.fahmy@students.kasralainy.edu.eg
+% For more details: https://www.sharelatex.com/learn/Beamer
+
+\documentclass{beamer}					% Document class
+
+\usepackage[english]{babel}				% Set language
+\usepackage[utf8x]{inputenc}			% Set encoding
+
+\mode<presentation>						% Set options
+{
+  \usetheme{default}					% Set theme
+  \usecolortheme{default} 				% Set colors
+  \usefonttheme{default}  				% Set font theme
+  \setbeamertemplate{caption}[numbered]	% Set caption to be numbered
+}
+
+\usepackage{graphicx}					% For including figures
+\usepackage{booktabs}					% For table rules
+\usepackage{hyperref}					% For cross-referencing
+\usepackage{subcaption}
+\usepackage{multicol}
+\usepackage{listings}					% For code listings
+\usepackage{xcolor}
+
+% --- R code style for listings ---
+\definecolor{codegreen}{rgb}{0.0,0.5,0.2}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codeblue}{rgb}{0.1,0.2,0.7}
+\definecolor{backcolour}{rgb}{0.96,0.96,0.94}
+
+\lstdefinestyle{Rstyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{codeblue}\bfseries,
+    stringstyle=\color{codegreen},
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    language=R,
+    morekeywords={chisq.test, matrix, c, fisher.test, mcnemar.test, table}
+}
+\lstset{style=Rstyle}
+
+\title{The Chi-squared Test}	% Presentation title
+\author{Rex Shao-Yu Wang}								% Presentation author
+\institute{Department of Agronomy, National Taiwan University}					% Author affiliation
+\date{June 1, 2026}									% Today's date	
+
+\begin{document}
+
+% Title page
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% Outline
+\begin{frame}{Outline}
+  \tableofcontents
+\end{frame}
+
+%==================================================================
+\section{Quick Review}
+%==================================================================
+
+\begin{frame}{When Do We Use the Chi-squared Test?}
+
+\small
+\begin{block}{The Decision Rule}
+Both the response (Y) \textbf{and} the predictor (X) are \textbf{categorical}
+(counts / frequencies, not means).
+\end{block}
+
+\vspace{0.6em}
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Data type} & \textbf{Test} \\
+\midrule
+Continuous Y, continuous X & Correlation / Regression \\
+Continuous Y, categorical X & t-test / ANOVA \\
+\textbf{Categorical Y, categorical X} & \textbf{Chi-squared test} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.8em}
+\begin{alertblock}{Core Idea}
+The core idea is always: compare \textbf{Observed} vs \textbf{Expected} counts.
+$$\chi^2 = \sum \frac{(O - E)^2}{E}$$
+\end{alertblock}
+
+\end{frame}
+
+
+\begin{frame}{Three Chi-squared Tests --- One Function in R}
+\begin{itemize}
+    \item \textbf{Test of Independence}\\
+    \hspace{1em} Tests whether {two categorical variables are associated}
+    
+    \vspace{0.6em}
+    \item \textbf{Goodness-of-Fit Test} \\
+    \hspace{1em} Tests whether {observed frequencies match a specified distribution}
+    
+    \vspace{0.6em}
+    \item \textbf{Test of Homogeneity} \\
+    \hspace{1em} Tests whether {multiple populations share the same distribution}
+\end{itemize}
+\small
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Test} & \textbf{Question} & \textbf{R function} \\
+\midrule
+Goodness-of-Fit & Fit a theoretical ratio? & \texttt{chisq.test(x, p=)} \\
+Independence & Two variables associated? & \texttt{chisq.test(table)} \\
+Homogeneity & Same distribution across groups? & \texttt{chisq.test(table)} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+
+\end{frame}
+
+%==================================================================
+\section{Building the Data}
+%==================================================================
+
+\begin{frame}[fragile]{Two Ways to Build a Contingency Table}
+
+\textbf{Option A --- Type the counts directly with \texttt{matrix()}}
+\begin{lstlisting}
+oil <- matrix(c(154, 132,
+                180, 126,
+                104, 131),
+              nrow = 3, byrow = TRUE)
+rownames(oil) <- c("Support", "Oppose", "DoNotKnow")
+colnames(oil) <- c("Grad", "NonGrad")
+\end{lstlisting}
+
+\vspace{0.4em}
+\textbf{Option B --- From raw data with \texttt{table()}}
+\begin{lstlisting}
+# df has one row per respondent
+oil <- table(df$opinion, df$college)
+\end{lstlisting}
+\end{frame}
+
+%==================================================================
+\section{R Implementation}
+%==================================================================
+
+\begin{frame}{Goodness-of-Fit Test}
+\small
+\begin{block}{What it tests}
+Whether the observed counts of a \textbf{single categorical variable} match a
+\textbf{theoretical / expected ratio}.
+\end{block}
+
+\vspace{0.5em}
+$$
+\begin{cases}
+H_0: \text{the population follows the given distribution} \\
+H_1: \text{it does not}
+\end{cases}
+$$
+
+\begin{itemize}
+    \item Expected count: $E_i = p_i \times N$ (a known ratio, no second variable)
+    \item df $= k - 1$, where $k$ = number of categories
+\end{itemize}
+
+\vspace{0.8em}
+\begin{alertblock}{Keep in mind}
+Here the expected proportions come from \textbf{theory} (e.g.\ a genetic law),
+not from the data itself.
+\end{alertblock}
+
+\end{frame}
+
+
+\begin{frame}[fragile]{Goodness-of-Fit Test}
+\small
+\textbf{Example:} Do budgie colours follow Mendel's \textbf{9:3:3:1} ratio? \\
+Counts of $N = 971$ birds: Green 550, Blue 168, Yellow 180, White 73. ($\alpha=0.05$)
+
+\begin{lstlisting}
+observed <- c(Green=550, Blue=168, Yellow=180, White=73)
+expected_p <- c(9, 3, 3, 1) / 16  
+
+chisq.test(x = observed, p = expected_p)
+\end{lstlisting}
+
+\vspace{0.3em}
+\texttt{X-squared = 3.6342, df = 3, p-value = 0.3038} \\
+\vspace{0.3em}
+$\because$ p $>$ 0.05 \ $\therefore$ data are consistent with Mendel's laws.
+
+\end{frame}
+
+
+\begin{frame}{Test of Independence}
+\small
+\begin{block}{What it tests}
+Whether \textbf{two categorical variables} measured on \textbf{one sample}
+are associated (related) or independent.
+\end{block}
+
+\vspace{0.5em}
+$$
+\begin{cases}
+H_0: \text{the two factors are independent} \\
+H_1: \text{ the two factors are associated}
+\end{cases}
+$$
+\begin{itemize}
+    \item Data are arranged in a \textbf{contingency table}
+    \item Expected count: $E_{ij} = (R_i \times C_j) / N$ --- estimated \textbf{from the data}
+    \item df $= (r-1)(c-1)$
+\end{itemize}
+
+\vspace{0.8em}
+\begin{alertblock}{Keep in mind}
+Unlike goodness-of-fit, there is \textbf{no theoretical distribution} ---
+expected counts come from the row and column totals.
+\end{alertblock}
+
+\end{frame}
+
+
+\begin{frame}[fragile]{Test of Independence}
+\small
+\textbf{Example:} 827 people were asked their opinion on oil drilling,
+split by college status. Is opinion \textbf{associated} with having a degree?
+
+\begin{lstlisting}
+oil <- matrix(c(154, 132,
+                180, 126,
+                104, 131),
+              nrow = 3, byrow = TRUE)
+
+chisq.test(oil, correct = FALSE) 
+chisq.test(oil)$expected 
+\end{lstlisting}
+
+\vspace{0.3em}
+\texttt{X-squared = 11.47, df = 2, p-value = 0.0032}\\
+\vspace{0.3em}
+$\because$ p $<$ 0.05 \ $\therefore$ reject $H_0$: the two factors are NOT independent.
+
+\vspace{0.6em}
+\begin{alertblock}{Reminder}
+For a \textbf{2x2} table, \texttt{chisq.test()} applies Yates' correction by
+\textbf{default}. Use \texttt{correct = FALSE} to turn it off.
+\end{alertblock}
+\end{frame}
+
+
+\begin{frame}{Test of Homogeneity}
+\small
+\begin{block}{What it tests}
+Whether \textbf{two (or more) separate populations} share the
+\textbf{same distribution} over the categories of one variable.
+\end{block}
+
+\vspace{0.5em}
+$$
+\begin{cases}
+H_0: \text{the populations follow the same distribution} \\
+H_1: \text{at least one population differs}
+\end{cases}
+$$
+
+\begin{itemize}
+    \item Same contingency table, same $E_{ij} = (R_i \times C_j)/N$, same df
+\end{itemize}
+
+\vspace{0.8em}
+\begin{alertblock}{Independence vs Homogeneity}
+The \textbf{computation is identical} to the independence test.\\
+The difference is \textbf{study design}: 
+\begin{itemize}
+    \item Independence: \textbf{one} sample cross-classified
+    \item Homogeneity: \textbf{separate} samples from each population
+\end{itemize}
+\end{alertblock}
+
+\end{frame}
+
+
+\begin{frame}[fragile]{Test of Homogeneity}
+\small
+\textbf{Example:} Separate samples of male and female students were asked
+their living arrangement. Do the two groups share the \textbf{same distribution}?
+
+\begin{lstlisting}
+living <- matrix(c(72, 84, 49, 45,
+                   91, 86, 88, 35),
+                 nrow = 2, byrow = TRUE)
+rownames(living) <- c("Male", "Female")
+colnames(living) <- c("Dorm","Apt","Home","Other")
+
+chisq.test(living)
+\end{lstlisting}
+
+\vspace{0.3em}
+\texttt{X-squared = 10.13, df = 3, p-value = 0.0175}\\
+
+\vspace{0.3em}
+$\because$ p $<$ 0.05 \ $\therefore$ reject $H_0$: the distributions are NOT the same.
+
+\end{frame}
+
+
+\begin{frame}{Interpreting the R Output}
+\small
+A typical \texttt{chisq.test()} output gives three numbers:
+
+\vspace{0.6em}
+\begin{itemize}
+    \item \textbf{X-squared} --- the test statistic $\chi^2_0$
+    \item \textbf{df} --- degrees of freedom
+    \item \textbf{p-value} --- probability of this result if $H_0$ were true
+\end{itemize}
+
+\vspace{0.8em}
+\begin{block}{Decision Rule}
+If \textbf{p-value $< \alpha$} (significance level) $\Rightarrow$ \textbf{reject $H_0$}.
+\end{block}
+
+\end{frame}
+
+%==================================================================
+\section{Paired Data: McNemar Test}
+%==================================================================
+ 
+\begin{frame}{McNemar Test}
+\small
+\begin{block}{When to use}
+When the two samples are \textbf{paired / not independent} --- the
+\textbf{same subjects} measured twice (e.g.\ the same voters before vs
+after a debate).
+\end{block}
+ 
+\vspace{0.5em}
+\begin{itemize}
+    \item $H_0$: the proportion is unchanged (no shift between the two times)
+    \item Only the \textbf{off-diagonal} cells ($n_{12}$, $n_{21}$) carry information ---
+          the agreements on the diagonal cancel out
+    \item Test statistic: $\chi^2 = \dfrac{(n_{12} - n_{21})^2}{n_{12} + n_{21}}$, df $= 1$
+\end{itemize}
+ 
+\vspace{0.8em}
+\begin{alertblock}{Why not the ordinary test?}
+The ordinary chi-squared test assumes \textbf{independent} observations.
+Paired data violate this, so a different statistic is needed.
+\end{alertblock}
+ 
+\end{frame}
+ 
+ 
+\begin{frame}[fragile]{McNemar Test}
+\small
+\textbf{Example:} 1000 voters stated their choice \textbf{before} and
+\textbf{after} a debate. Did the debate change their decision?
+ 
+\vspace{0.4em}
+\centering
+\begin{tabular}{lcc}
+\toprule
+ & After: A & After: B \\
+\midrule
+Before: A & 491 & 9 \\
+Before: B & 1 & 499 \\
+\bottomrule
+\end{tabular}
+ 
+\flushleft
+\vspace{0.5em}
+\begin{lstlisting}
+votes <- matrix(c(491, 9,
+                  1, 499),
+                nrow = 2, byrow = TRUE)
+ 
+mcnemar.test(votes, correct = FALSE)
+\end{lstlisting}
+ 
+\vspace{0.3em}
+\texttt{McNemar's chi-squared = 6.4, df = 1, p-value = 0.0114}\\
+\vspace{0.3em}
+$\because$ p $<$ 0.05 \ $\therefore$ reject $H_0$: the debate did change voters' decisions.
+ 
+\end{frame}
+ 
+%==================================================================
+\section{Summary}
+%==================================================================
+ 
+\begin{frame}[fragile]{Summary: The R Workflow}
+\small
+\begin{enumerate}
+    \item Build the table --- \texttt{matrix()} or \texttt{table()}
+    \item Run the test --- \texttt{chisq.test()}
+    \item \textbf{Check} expected counts --- \texttt{result\$expected}
+    \item Read the p-value and decide
+\end{enumerate}
+ 
+\vspace{1em}
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Situation} & \textbf{Function} \\
+\midrule
+Fit a ratio & \texttt{chisq.test(x, p=)} \\
+Independence / Homogeneity & \texttt{chisq.test(table)} \\
+Paired data & \texttt{mcnemar.test()} \\
+\bottomrule
+\end{tabular}
+\end{center}
+ 
+\vspace{0.8em}
+\centering \textit{Same idea every time: Observed vs Expected.}
+ 
+\end{frame}
+ 
+\begin{frame}{}    
+    \begin{center}
+    \Large Thank you for your attention!
+    \end{center}
+\end{frame}
+ 
+\end{document}
