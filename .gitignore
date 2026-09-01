@@ -1,0 +1,18 @@
+# LaTeX build artifacts (keep .tex, figure/, and .pdf tracked)
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.nav
+*.out
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+
+# macOS
+.DS_Store
