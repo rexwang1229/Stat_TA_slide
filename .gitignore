@@ -1,4 +1,7 @@
-# LaTeX build artifacts (keep .tex, figure/, and .pdf tracked)
+# Compiled output
+*.pdf
+
+# LaTeX build artifacts (keep .tex and figure/ tracked)
 *.aux
 *.fdb_latexmk
 *.fls
